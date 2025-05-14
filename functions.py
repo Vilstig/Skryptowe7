@@ -2,6 +2,9 @@ import functools
 import logging
 import time
 import inspect
+from collections.abc import Sequence
+from unittest import case
+
 
 def log(obj):
     def wrapper(level=logging.INFO):
@@ -48,16 +51,18 @@ def test_acronym():
 
 
 def median(numbers: list):
-    def sorted_copy(lst): # funkcja wywolujaca funkcje?
-        return sorted(lst)
+    if not numbers:
+        return None
 
-    nums = sorted_copy(numbers)
+    nums = sorted(numbers)
+    return _median_sorted(nums)
 
-    return None if not nums else (
-        nums[0] if len(nums) == 1 else (
-            (nums[0] + nums[1]) / 2 if len(nums) == 2 else median(nums[1:-1])
-        )
+def _median_sorted(nums: list):
+    n = len(nums)
+    return nums[0] if n == 1 else (
+        (nums[0] + nums[1]) / 2 if n == 2 else _median_sorted(nums[1:-1])
     )
+
 
 def test_median():
     print(median([1, 2, 3, 4, 5]))
@@ -80,7 +85,7 @@ def make_alpha_dict(text: str):
 
     return {
         key: list(filter(lambda word: key in word, words))
-        for key in keys # uzywany for
+        for key in keys
     }
 
 def test_alpha_dict():
@@ -91,7 +96,7 @@ def test_alpha_dict():
 def flatten(lst: list):
     if not lst:
         return []
-    if isinstance(lst[0], list): # moga byc tez sekwencje
+    if isinstance(lst[0], Sequence):
         return flatten(lst[0]) + flatten(lst[1:])
     else:
         return [lst[0]] + flatten(lst[1:])
@@ -99,6 +104,7 @@ def flatten(lst: list):
 def test_flatten():
     print(flatten([1, [2, 3], [[4, 5], 6]]))
     print(flatten([1, 2]))
+    print(flatten([1, [2, 3], (4, 5), range(6, 8)]))
 
 def _gen_maker(f):
     it = 0
@@ -158,7 +164,7 @@ def test_5_fibo_mem():
         print(fibo_mem(i))
 
 def main():
-    test_5_fibo_mem()
+    test_flatten()
 
 if __name__ == '__main__':
     main()
