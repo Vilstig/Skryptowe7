@@ -1,29 +1,32 @@
-import functools
+from functools import wraps, lru_cache
 import logging
 import time
 import inspect
 from collections.abc import Sequence
-from unittest import case
 
 
-def log(obj):
-    def wrapper(level=logging.INFO):
-        if inspect.isclass(obj):
-            _log_class(obj, level)
-        elif inspect.isfunction(obj):
-            _log_func(obj, level)
+def log(obj=None, *, level=logging.INFO): # * means all following arguments are keyword only
+    def decorator(target):
+        if inspect.isclass(target):
+            return _log_class(target, level)
+        elif inspect.isfunction(target):
+            return _log_func(target, level)
         else:
             raise TypeError("@log can only be used on classes or functions")
 
-    return wrapper
+    if obj is None:
+        return decorator
+    else:
+        return decorator(obj)
 
 def _log_class(c, level):
     logger = logging.getLogger(c.__module__)
+    og_init = c.__init__
 
-    @functools.wraps(c.__init__) # so __name__ and __doc__ work correctly
+    @wraps(og_init) # so __name__ and __doc__ work correctly
     def wrapper(self, *args, **kwargs):
-        logger.log(level, f'Creating an instance of {c.__name__}')
-        c(self, *args, **kwargs)
+        logger.log(level, f'Creating an instance of {c.__name__} with args = {args}, kwargs = {kwargs}')
+        og_init(self, *args, **kwargs)
 
     c.__init__ = wrapper
     return c
@@ -32,7 +35,7 @@ def _log_class(c, level):
 def _log_func(f, level):
     logger = logging.getLogger(f.__module__)
 
-    @functools.wraps(f)
+    @wraps(f)
     def wrapper(*args, **kwargs):
         begin_time = time.time()
         logger.log(level, f'Function {f.__name__} started with args = {args}, kwargs = {kwargs}')
@@ -118,7 +121,7 @@ def make_generator(f):
     return _gen_maker(f)
 
 def make_generator_memoized(f):
-    f_cache = functools.lru_cache(maxsize=128)(f)
+    f_cache = lru_cache(maxsize=128)(f)
     return _gen_maker(f_cache)
 
 
@@ -131,7 +134,7 @@ def fibo(n):
         case n:
             return fibo(n-1) + fibo(n-2)
 
-@functools.lru_cache(maxsize=128)
+@lru_cache(maxsize=128)
 def fibo_mem(n):
     match n:
         case 0:
@@ -163,8 +166,28 @@ def test_5_fibo_mem():
     for i in range(1, 11):
         print(fibo_mem(i))
 
+def test_6(caplog): #needs to be run with command pytest functions.py -s to work properly (-s enables print output into console)
+    @log
+    class TestClass:
+        def __init__(self, num, kwnum=999):
+            self.num = num
+            self.kwnum=kwnum
+
+    @log
+    def test_print(x, y, kw=13):
+        print(f"Testing {x}, {y}, {kw}")
+
+    caplog.set_level(logging.INFO)
+    TestClass(12, kwnum=567)
+    print(caplog.text)
+    caplog.clear()
+    test_print(1, 2, kw=55)
+    print(caplog.text)
+
+
+
 def main():
-    test_flatten()
+    test_6()
 
 if __name__ == '__main__':
     main()
