@@ -53,17 +53,10 @@ def test_acronym():
     print(acronym(['Zaklad', 'Ubezpieczen', 'Socjalnych']))
 
 
-def median(numbers: list):
-    if not numbers:
-        return None
-
-    nums = sorted(numbers)
-    return _median_sorted(nums)
-
-def _median_sorted(nums: list):
-    n = len(nums)
-    return nums[0] if n == 1 else (
-        (nums[0] + nums[1]) / 2 if n == 2 else _median_sorted(nums[1:-1])
+def median(lst):
+    lst = sorted(lst)
+    return None if not lst else (
+        lst[len(lst)//2] if len(lst) % 2 == 1 else (lst[len(lst)//2 - 1] + lst[len(lst)//2]) / 2
     )
 
 
@@ -97,12 +90,10 @@ def test_alpha_dict():
 
 
 def flatten(lst: list):
-    if not lst:
-        return []
-    if isinstance(lst[0], Sequence):
-        return flatten(lst[0]) + flatten(lst[1:])
-    else:
-        return [lst[0]] + flatten(lst[1:])
+    return [] if not lst else (
+        flatten(lst[0]) + flatten(lst[1:]) if isinstance(lst[0], Sequence) and not isinstance(lst[0], (str, bytes))
+        else [lst[0]] + flatten(lst[1:])
+    )
 
 def test_flatten():
     print(flatten([1, [2, 3], [[4, 5], 6]]))
